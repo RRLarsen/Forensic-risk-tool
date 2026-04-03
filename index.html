@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forensic Risk Interpretation Tool — Beta</title>
+  <style>
+    :root {
+      --bg: #f6f7f8;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --accent: #0f766e;
+      --accent-soft: #dff5f2;
+      --warn: #92400e;
+      --warn-bg: #fff7ed;
+      --shadow: 0 8px 24px rgba(0,0,0,0.06);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    .hero {
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.15rem;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 850px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .section-label {
+      display: inline-block;
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin: 14px 0 6px;
+    }
+
+    select, input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.98rem;
+      background: white;
+    }
+
+    .radio-group, .checkbox-group {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .choice {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fafafa;
+      cursor: pointer;
+    }
+
+    .choice input {
+      margin: 0;
+    }
+
+    .choice span {
+      font-weight: normal;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      width: 100%;
+      margin-top: 18px;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: var(--text);
+      margin-top: 10px;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .stat-box {
+      background: #fafafa;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .stat-title {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: bold;
+    }
+
+    .viz-wrap {
+      margin-top: 8px;
+    }
+
+    .bar-shell {
+      height: 22px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .report-box, .source-box, .warning-box {
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .report-box {
+      background: #f9fafb;
+      border: 1px solid var(--border);
+    }
+
+    .source-box {
+      background: #f9fafb;
+      border: 1px solid var(--border);
+    }
+
+    .warning-box {
+      background: var(--warn-bg);
+      border: 1px solid #fed7aa;
+      color: var(--warn);
+    }
+
+    .footer {
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .copy-msg {
+      color: var(--accent);
+      font-size: 0.9rem;
+      margin-top: 8px;
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .result-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>Forensic Risk Interpretation Tool — Beta</h1>
+      <p class="subtitle">
+        A simplified prototype interface for translating group-level risk-assessment evidence into practitioner-facing interpretations. This beta illustrates the user flow, not a final evidentiary product.
+      </p>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="card">
+          <div class="section-label">Step 1</div>
+          <h2>Choose mode</h2>
+          <div class="radio-group">
+            <label class="choice"><input type="radio" name="mode" value="tool" checked><span>Tool-based mode</span></label>
+            <label class="choice"><input type="radio" name="mode" value="custom"><span>Custom mode</span></label>
+          </div>
+          <p class="muted">Tool-based mode pulls from the demo evidence file. Custom mode lets the user enter a value directly.</p>
+        </div>
+
+        <div class="card" id="toolCard">
+          <div class="section-label">Step 2</div>
+          <h2>Select tool and outcome</h2>
+          <label for="toolSelect">Risk assessment tool</label>
+          <select id="toolSelect"></select>
+
+          <label>Outcome</label>
+          <div id="outcomeOptions" class="checkbox-group"></div>
+
+          <label>Population</label>
+          <div id="populationOptions" class="checkbox-group"></div>
+        </div>
+
+        <div class="card hidden" id="customCard">
+          <div class="section-label">Step 2</div>
+          <h2>Enter custom values</h2>
+          <label for="metricType">Effect size type</label>
+          <select id="metricType">
+            <option value="d">Cohen's d</option>
+            <option value="auc">AUC</option>
+          </select>
+
+          <label for="customEffect">Effect size value</label>
+          <input id="customEffect" type="number" step="0.01" value="0.50" />
+
+          <label>Outcome</label>
+          <div class="checkbox-group">
+            <label class="choice"><input type="radio" name="customOutcome" value="general recidivism" checked><span>General recidivism</span></label>
+            <label class="choice"><input type="radio" name="customOutcome" value="violent recidivism"><span>Violent recidivism</span></label>
+            <label class="choice"><input type="radio" name="customOutcome" value="institutional misconduct"><span>Institutional misconduct</span></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <button class="btn-primary" id="generateBtn">Generate interpretation</button>
+          <button class="btn-secondary" id="resetBtn">Reset</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="section-label">Output</div>
+          <h2>Interpretation</h2>
+          <div class="result-grid">
+            <div class="stat-box">
+              <div class="stat-title">Selected metric</div>
+              <div class="stat-value" id="metricDisplay">—</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-title">Interpretive estimate</div>
+              <div class="stat-value" id="derivedDisplay">—</div>
+            </div>
+          </div>
+
+          <div class="viz-wrap">
+            <div class="stat-title" id="vizLabel">Visual summary</div>
+            <div class="bar-shell">
+              <div class="bar-fill" id="vizBar"></div>
+            </div>
+            <p class="muted" id="vizText">No result generated yet.</p>
+          </div>
+
+          <div class="report-box">
+            <strong>Plain-language interpretation</strong>
+            <p id="plainText">Awaiting input.</p>
+          </div>
+
+          <div class="report-box">
+            <strong>Report-ready wording</strong>
+            <p id="reportText">Awaiting input.</p>
+            <button class="btn-secondary" id="copyBtn">Copy text</button>
+            <div class="copy-msg" id="copyMsg">Copied.</div>
+          </div>
+
+          <div class="source-box">
+            <strong>Evidence source</strong>
+            <p id="sourceText">No source selected.</p>
+          </div>
+
+          <div class="warning-box">
+            <strong>Caution</strong>
+            <p id="warningText">
+              This tool is a prototype for illustrating how group-level evidence might be translated into practitioner-facing language. It should not be treated as a substitute for case-specific professional judgment.
+            </p>
+          </div>
+
+          <div class="footer" id="credits">
+            Beta interface mock-up. Replace this section later with contributor names, affiliations, version number, and contact details.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const demoData = {
+      tools: [
+        {
+          id: 'pclr',
+          label: 'PCL-R',
+          outcomes: [
+            {
+              id: 'general',
+              label: 'General recidivism',
+              populations: [
+                {
+                  id: 'adult',
+                  label: 'Adults',
+                  metric: 'd',
+                  effect: 0.50,
+                  ci: '[0.38, 0.62]',
+                  source: 'Demo source placeholder: Meta-analysis entry for PCL-R and general recidivism in adults.'
+                },
+                {
+                  id: 'youth',
+                  label: 'Youth',
+                  metric: 'd',
+                  effect: 0.42,
+                  ci: '[0.24, 0.60]',
+                  source: 'Demo source placeholder: Youth subgroup entry.'
+                }
+              ]
+            },
+            {
+              id: 'violent',
+              label: 'Violent recidivism',
+              populations: [
+                {
+                  id: 'adult',
+                  label: 'Adults',
+                  metric: 'd',
+                  effect: 0.55,
+                  ci: '[0.40, 0.70]',
+                  source: 'Demo source placeholder: Meta-analysis entry for PCL-R and violent recidivism in adults.'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'vrag',
+          label: 'VRAG',
+          outcomes: [
+            {
+              id: 'violent',
+              label: 'Violent recidivism',
+              populations: [
+                {
+                  id: 'adult',
+                  label: 'Adults',
+                  metric: 'auc',
+                  effect: 0.68,
+                  ci: '[0.63, 0.73]',
+                  source: 'Demo source placeholder: Meta-analysis entry for VRAG and violent recidivism.'
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    const modeInputs = document.querySelectorAll('input[name="mode"]');
+    const toolCard = document.getElementById('toolCard');
+    const customCard = document.getElementById('customCard');
+    const toolSelect = document.getElementById('toolSelect');
+    const outcomeOptions = document.getElementById('outcomeOptions');
+    const populationOptions = document.getElementById('populationOptions');
+    const generateBtn = document.getElementById('generateBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const metricDisplay = document.getElementById('metricDisplay');
+    const derivedDisplay = document.getElementById('derivedDisplay');
+    const vizBar = document.getElementById('vizBar');
+    const vizText = document.getElementById('vizText');
+    const plainText = document.getElementById('plainText');
+    const reportText = document.getElementById('reportText');
+    const sourceText = document.getElementById('sourceText');
+    const copyBtn = document.getElementById('copyBtn');
+    const copyMsg = document.getElementById('copyMsg');
+
+    function initToolSelect() {
+      toolSelect.innerHTML = demoData.tools
+        .map(tool => `<option value="${tool.id}">${tool.label}</option>`)
+        .join('');
+      renderOutcomeOptions();
+    }
+
+    function getSelectedMode() {
+      return document.querySelector('input[name="mode"]:checked').value;
+    }
+
+    function getSelectedTool() {
+      return demoData.tools.find(t => t.id === toolSelect.value);
+    }
+
+    function renderOutcomeOptions() {
+      const tool = getSelectedTool();
+      if (!tool) return;
+
+      outcomeOptions.innerHTML = tool.outcomes.map((outcome, i) => `
+        <label class="choice">
+          <input type="radio" name="outcome" value="${outcome.id}" ${i === 0 ? 'checked' : ''}>
+          <span>${outcome.label}</span>
+        </label>
+      `).join('');
+
+      renderPopulationOptions();
+    }
+
+    function getSelectedOutcome() {
+      const tool = getSelectedTool();
+      const outcomeId = document.querySelector('input[name="outcome"]:checked')?.value;
+      return tool?.outcomes.find(o => o.id === outcomeId);
+    }
+
+    function renderPopulationOptions() {
+      const outcome = getSelectedOutcome();
+      if (!outcome) return;
+
+      populationOptions.innerHTML = outcome.populations.map((pop, i) => `
+        <label class="choice">
+          <input type="radio" name="population" value="${pop.id}" ${i === 0 ? 'checked' : ''}>
+          <span>${pop.label}</span>
+        </label>
+      `).join('');
+    }
+
+    function getSelectedPopulationRecord() {
+      const outcome = getSelectedOutcome();
+      const popId = document.querySelector('input[name="population"]:checked')?.value;
+      return outcome?.populations.find(p => p.id === popId);
+    }
+
+    function clamp(num, min, max) {
+      return Math.min(Math.max(num, min), max);
+    }
+
+    function interpretD(d) {
+      const overlap = clamp(Math.round(100 - (Math.abs(d) * 30)), 50, 100);
+      const superiority = clamp(Math.round(50 + (d * 30)), 50, 95);
+      return {
+        derived: `${superiority}% superiority`,
+        bar: 100 - overlap,
+        viz: `Approximate distribution separation is modest. Estimated overlap is about ${overlap}%, with a superiority probability of roughly ${superiority}%.`,
+        plain: `This effect size suggests a modest average group difference for the selected outcome. There is still substantial overlap between the groups, so the result should not be interpreted as sharply separating individuals into distinct risk categories.`,
+        report: `The available group-level evidence suggests a modest association between the selected assessment result and ${currentOutcomeLabel()}. The effect should be interpreted cautiously, as substantial overlap between groups remains and the statistic does not by itself justify strong individual-level conclusions.`
+      };
+    }
+
+    function interpretAUC(auc) {
+      const percent = clamp(Math.round((auc - 0.5) * 200), 0, 100);
+      return {
+        derived: `AUC ${auc.toFixed(2)}`,
+        bar: percent,
+        viz: `Relative to chance performance (0.50), this value indicates modest-to-moderate discrimination.`,
+        plain: `This AUC value suggests that the instrument discriminates somewhat better than chance for the selected outcome, but it should not be interpreted as yielding highly precise individual prediction.`,
+        report: `The available evidence indicates modest discriminatory performance for ${currentOutcomeLabel()}. Although performance exceeds chance, the estimate should be interpreted cautiously and should not be treated as determinative at the individual case level.`
+      };
+    }
+
+    function currentOutcomeLabel() {
+      if (getSelectedMode() === 'custom') {
+        return document.querySelector('input[name="customOutcome"]:checked')?.value || 'the selected outcome';
+      }
+      return getSelectedOutcome()?.label?.toLowerCase() || 'the selected outcome';
+    }
+
+    function generateFromTool() {
+      const record = getSelectedPopulationRecord();
+      if (!record) return;
+
+      const result = record.metric === 'd' ? interpretD(record.effect) : interpretAUC(record.effect);
+      metricDisplay.textContent = `${record.metric === 'd' ? "Cohen's d" : 'AUC'} = ${record.effect.toFixed(2)} ${record.ci ? ` ${record.ci}` : ''}`;
+      derivedDisplay.textContent = result.derived;
+      vizBar.style.width = `${result.bar}%`;
+      vizText.textContent = result.viz;
+      plainText.textContent = result.plain;
+      reportText.textContent = result.report;
+      sourceText.textContent = record.source;
+    }
+
+    function generateFromCustom() {
+      const metric = document.getElementById('metricType').value;
+      const value = parseFloat(document.getElementById('customEffect').value || '0');
+      const result = metric === 'd' ? interpretD(value) : interpretAUC(value);
+
+      metricDisplay.textContent = `${metric === 'd' ? "Cohen's d" : 'AUC'} = ${value.toFixed(2)}`;
+      derivedDisplay.textContent = result.derived;
+      vizBar.style.width = `${result.bar}%`;
+      vizText.textContent = result.viz;
+      plainText.textContent = result.plain;
+      reportText.textContent = result.report;
+      sourceText.textContent = 'Custom mode: no external source attached in this beta prototype.';
+    }
+
+    function toggleModeUI() {
+      const mode = getSelectedMode();
+      toolCard.classList.toggle('hidden', mode !== 'tool');
+      customCard.classList.toggle('hidden', mode !== 'custom');
+    }
+
+    function resetOutputs() {
+      metricDisplay.textContent = '—';
+      derivedDisplay.textContent = '—';
+      vizBar.style.width = '0%';
+      vizText.textContent = 'No result generated yet.';
+      plainText.textContent = 'Awaiting input.';
+      reportText.textContent = 'Awaiting input.';
+      sourceText.textContent = 'No source selected.';
+      copyMsg.style.display = 'none';
+    }
+
+    modeInputs.forEach(input => {
+      input.addEventListener('change', () => {
+        toggleModeUI();
+        resetOutputs();
+      });
+    });
+
+    toolSelect.addEventListener('change', () => {
+      renderOutcomeOptions();
+      resetOutputs();
+    });
+
+    outcomeOptions.addEventListener('change', () => {
+      renderPopulationOptions();
+      resetOutputs();
+    });
+
+    populationOptions.addEventListener('change', resetOutputs);
+
+    generateBtn.addEventListener('click', () => {
+      copyMsg.style.display = 'none';
+      if (getSelectedMode() === 'tool') generateFromTool();
+      else generateFromCustom();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      document.querySelector('input[name="mode"][value="tool"]').checked = true;
+      document.getElementById('metricType').value = 'd';
+      document.getElementById('customEffect').value = '0.50';
+      document.querySelector('input[name="customOutcome"][value="general recidivism"]').checked = true;
+      initToolSelect();
+      toggleModeUI();
+      resetOutputs();
+    });
+
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(reportText.textContent);
+        copyMsg.style.display = 'block';
+      } catch (e) {
+        copyMsg.textContent = 'Copy failed on this browser.';
+        copyMsg.style.display = 'block';
+      }
+    });
+
+    initToolSelect();
+    toggleModeUI();
+    resetOutputs();
+  </script>
+</body>
+</html>
