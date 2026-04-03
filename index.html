@@ -123,6 +123,7 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 14px;
+      min-height: 120px;
     }
     .stat-title {
       font-size: 0.85rem;
@@ -130,8 +131,14 @@
       margin-bottom: 6px;
     }
     .stat-value {
-      font-size: 1.4rem;
+      font-size: 1.25rem;
       font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .stat-subtext {
+      font-size: 0.86rem;
+      color: var(--muted);
+      line-height: 1.4;
     }
     .illustration-card {
       background: #fafafa;
@@ -156,6 +163,7 @@
       border-radius: 12px;
     }
     .slider-wrap {
+      position: relative;
       margin-bottom: 14px;
       padding: 12px;
       background: white;
@@ -173,6 +181,22 @@
       min-width: 82px;
       text-align: right;
     }
+    .slider-locked-note {
+      position: absolute;
+      top: -8px;
+      left: 12px;
+      transform: translateY(-100%);
+      background: #111827;
+      color: white;
+      font-size: 0.78rem;
+      padding: 8px 10px;
+      border-radius: 8px;
+      display: none;
+      z-index: 5;
+      max-width: 260px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    }
+    .slider-wrap.show-note .slider-locked-note { display: block; }
     .ring-grid {
       display: grid;
       gap: 12px;
@@ -243,6 +267,20 @@
       color: var(--muted);
       margin-top: 8px;
     }
+    .source-links {
+      margin-top: 8px;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    .source-links a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .source-links a:hover { text-decoration: underline; }
+    .term-help {
+      text-decoration: underline dotted;
+      cursor: help;
+    }
     @media (max-width: 980px) {
       .grid { grid-template-columns: 1fr; }
       .result-grid { grid-template-columns: 1fr; }
@@ -312,16 +350,17 @@
 
       <div>
         <div class="card">
-          <div class="section-label">Output</div>
-          <h2>Interpretation</h2>
+          <div class="section-label">Interpretation</div>
           <div class="result-grid">
             <div class="stat-box">
-              <div class="stat-title">Selected metric</div>
+              <div class="stat-title">Displayed metric</div>
               <div class="stat-value" id="metricDisplay">—</div>
+              <div class="stat-subtext" id="metricSubtext">Effect size = —, Confidence interval = —</div>
             </div>
             <div class="stat-box">
-              <div class="stat-title">Interpretive estimate</div>
+              <div class="stat-title">General description</div>
               <div class="stat-value" id="derivedDisplay">—</div>
+              <div class="stat-subtext" id="derivedSubtext">A short description of the displayed effect size will appear here.</div>
             </div>
           </div>
 
@@ -330,11 +369,12 @@
             <div class="illustration-grid">
               <div class="curve-wrap">
                 <div class="slider-wrap" id="dSliderWrap">
+                  <div class="slider-locked-note" id="sliderLockedNote">To unlock the slider, choose &quot;Custom mode&quot; in left side menu.</div>
                   <div class="slider-row">
                     <input id="dSlider" type="range" min="0" max="2" step="0.01" value="0.50" />
                     <div class="slider-readout" id="dSliderValue">d = 0.50</div>
                   </div>
-                  <div class="mini-note">Drag the slider to vary Cohen's d from 0.00 to 2.00 and update the illustration and derived values.</div>
+                  <div class="mini-note" id="sliderHelperText">Drag the slider to vary Cohen's d from 0.00 to 2.00 and update the illustration and derived values.</div>
                 </div>
                 <svg id="curveSvg" viewBox="0 0 700 340" aria-label="Effect size illustration"></svg>
                 <div class="mini-note" id="curveCaption">Awaiting input.</div>
@@ -384,9 +424,15 @@
             <div class="copy-msg" id="copyMsg">Copied.</div>
           </div>
 
+          <div class="text-panel">
+            <strong>Empirical research</strong>
+            <p id="empiricalText">Empirical studies in forensic risk assessment usually follow groups of offenders or patients over time, score them on structured tools at baseline, and then test how well those scores predict later violence or reoffending. Researchers typically use cohort or case–control designs, extract risk scores (e.g., HCR-20) from files or assessments, and examine predictive validity with statistics like AUCs, sensitivity, and specificity.</p>
+          </div>
+
           <div class="source-box">
             <strong>Evidence source</strong>
             <p id="sourceText">No source selected.</p>
+            <div id="sourceLinks" class="source-links"></div>
           </div>
 
           <div class="warning-box">
@@ -411,15 +457,15 @@
               id: 'general',
               label: 'General recidivism',
               populations: [
-                { id: 'adult', label: 'Adults', metric: 'd', effect: 0.50, ci: '[0.38, 0.62]', source: 'Demo source placeholder: Meta-analysis entry for PCL-R and general recidivism in adults.' },
-                { id: 'youth', label: 'Youth', metric: 'd', effect: 0.42, ci: '[0.24, 0.60]', source: 'Demo source placeholder: Youth subgroup entry.' }
+                { id: 'adult', label: 'Adults', metric: 'd', effect: 0.50, ci: '[0.38, 0.62]' },
+                { id: 'youth', label: 'Youth', metric: 'd', effect: 0.42, ci: '[0.24, 0.60]' }
               ]
             },
             {
               id: 'violent',
               label: 'Violent recidivism',
               populations: [
-                { id: 'adult', label: 'Adults', metric: 'd', effect: 0.55, ci: '[0.40, 0.70]', source: 'Demo source placeholder: Meta-analysis entry for PCL-R and violent recidivism in adults.' }
+                { id: 'adult', label: 'Adults', metric: 'd', effect: 0.55, ci: '[0.40, 0.70]' }
               ]
             }
           ]
@@ -432,13 +478,16 @@
               id: 'violent',
               label: 'Violent recidivism',
               populations: [
-                { id: 'adult', label: 'Adults', metric: 'auc', effect: 0.68, ci: '[0.63, 0.73]', source: 'Demo source placeholder: Meta-analysis entry for VRAG and violent recidivism.' }
+                { id: 'adult', label: 'Adults', metric: 'auc', effect: 0.68, ci: '[0.63, 0.73]' }
               ]
             }
           ]
         }
       ]
     };
+
+    const PCLR_APA = `Holper, L., Ehrbar, C., Fancellu, F., Hauser, N. C., Habermeyer, E., & Mokros, A. (2025). <em>Criterion Validity of the Psychopathy Checklist in Legal Contexts: An Updated Meta-Analysis</em>. <em>Journal of Personality Assessment</em>, 1-16. https://doi.org/10.1080/00223891.2025.2469268`;
+    const PCLR_LINKS = `Full Text Available Here: <a href="https://www.tandfonline.com/doi/full/10.1080/00223891.2025.2469268" target="_blank" rel="noopener noreferrer">Publisher</a> | <a href="https://www.researchgate.net/publication/389560708_Criterion_Validity_of_the_Psychopathy_Checklist_in_Legal_Contexts_An_Updated_Meta-Analysis" target="_blank" rel="noopener noreferrer">ResearchGate</a>`;
 
     const modeInputs = document.querySelectorAll('input[name="mode"]');
     const toolCard = document.getElementById('toolCard');
@@ -449,11 +498,14 @@
     const generateBtn = document.getElementById('generateBtn');
     const resetBtn = document.getElementById('resetBtn');
     const metricDisplay = document.getElementById('metricDisplay');
+    const metricSubtext = document.getElementById('metricSubtext');
     const derivedDisplay = document.getElementById('derivedDisplay');
+    const derivedSubtext = document.getElementById('derivedSubtext');
     const technicalText = document.getElementById('technicalText');
     const plainText = document.getElementById('plainText');
     const reportText = document.getElementById('reportText');
     const sourceText = document.getElementById('sourceText');
+    const sourceLinks = document.getElementById('sourceLinks');
     const copyBtn = document.getElementById('copyBtn');
     const copyMsg = document.getElementById('copyMsg');
     const curveSvg = document.getElementById('curveSvg');
@@ -461,6 +513,8 @@
     const dSlider = document.getElementById('dSlider');
     const dSliderWrap = document.getElementById('dSliderWrap');
     const dSliderValue = document.getElementById('dSliderValue');
+    const sliderLockedNote = document.getElementById('sliderLockedNote');
+    const sliderHelperText = document.getElementById('sliderHelperText');
 
     function erf(x) {
       const sign = x >= 0 ? 1 : -1;
@@ -470,6 +524,7 @@
       const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
       return sign * y;
     }
+
     function normalCDF(x) { return 0.5 * (1 + erf(x / Math.sqrt(2))); }
     function clamp(num, min, max) { return Math.min(Math.max(num, min), max); }
 
@@ -477,8 +532,10 @@
       toolSelect.innerHTML = demoData.tools.map(tool => `<option value="${tool.id}">${tool.label}</option>`).join('');
       renderOutcomeOptions();
     }
+
     function getSelectedMode() { return document.querySelector('input[name="mode"]:checked').value; }
     function getSelectedTool() { return demoData.tools.find(t => t.id === toolSelect.value); }
+
     function renderOutcomeOptions() {
       const tool = getSelectedTool();
       if (!tool) return;
@@ -487,11 +544,13 @@
       `).join('');
       renderPopulationOptions();
     }
+
     function getSelectedOutcome() {
       const tool = getSelectedTool();
       const outcomeId = document.querySelector('input[name="outcome"]:checked')?.value;
       return tool?.outcomes.find(o => o.id === outcomeId);
     }
+
     function renderPopulationOptions() {
       const outcome = getSelectedOutcome();
       if (!outcome) return;
@@ -499,11 +558,13 @@
         <label class="choice"><input type="radio" name="population" value="${pop.id}" ${i === 0 ? 'checked' : ''}><span>${pop.label}</span></label>
       `).join('');
     }
+
     function getSelectedPopulationRecord() {
       const outcome = getSelectedOutcome();
       const popId = document.querySelector('input[name="population"]:checked')?.value;
       return outcome?.populations.find(p => p.id === popId);
     }
+
     function currentOutcomeLabel() {
       if (getSelectedMode() === 'custom') return document.querySelector('input[name="customOutcome"]:checked')?.value || 'the selected outcome';
       return getSelectedOutcome()?.label?.toLowerCase() || 'the selected outcome';
@@ -525,9 +586,11 @@
     function gaussianY(x, mu, sigma) {
       return (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * ((x - mu) / sigma) ** 2);
     }
+
     function buildCurvePath(points) {
       return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ');
     }
+
     function buildAreaPath(points, baseY) {
       if (!points.length) return '';
       return `M ${points[0].x.toFixed(2)} ${baseY.toFixed(2)} ` + points.map(p => `L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ') + ` L ${points[points.length - 1].x.toFixed(2)} ${baseY.toFixed(2)} Z`;
@@ -549,6 +612,7 @@
       const yScale = y => baseY - (y / yMax) * (plotH * 0.9);
       const n = 260;
       const pts1 = [], pts2 = [], overlapPts = [];
+
       for (let i = 0; i <= n; i++) {
         const x = domainMin + (i / n) * (domainMax - domainMin);
         const y1 = gaussianY(x, mu1, sigma);
@@ -557,6 +621,7 @@
         pts2.push({ x: xScale(x), y: yScale(y2) });
         overlapPts.push({ x: xScale(x), y: yScale(Math.min(y1, y2)) });
       }
+
       const mu1x = xScale(mu1);
       const mu2x = xScale(mu2);
       const topY1 = yScale(gaussianY(mu1, mu1, sigma));
@@ -570,9 +635,10 @@
         <line x1="${margin.left}" y1="${baseY}" x2="${width - margin.right}" y2="${baseY}" stroke="#9ca3af" stroke-width="1.5"></line>
         <line x1="${mu1x}" y1="${topY1}" x2="${mu1x}" y2="${baseY}" stroke="var(--blue)" stroke-width="2" stroke-dasharray="6 6"></line>
         <line x1="${mu2x}" y1="${topY2}" x2="${mu2x}" y2="${baseY}" stroke="var(--red)" stroke-width="2" stroke-dasharray="6 6"></line>
-        <text x="${mu1x}" y="${baseY + 28}" text-anchor="middle" font-size="14" fill="var(--blue)">Group 1 mean</text>
-        <text x="${mu2x}" y="${baseY + 28}" text-anchor="middle" font-size="14" fill="var(--red)">Group 2 mean</text>
+        <text x="${mu1x}" y="${baseY + 18}" text-anchor="middle" font-size="14" fill="var(--blue)">Group 1 mean</text>
+        <text x="${mu2x}" y="${baseY + 34}" text-anchor="middle" font-size="14" fill="var(--red)">Group 2 mean</text>
       `;
+
       curveCaption.textContent = `Standardized mean-difference illustration: two normal distributions separated by d = ${d.toFixed(2)}, with the shared area shaded.`;
     }
 
@@ -585,12 +651,15 @@
       const y = t => height - pad - t * plotH;
       const power = clamp((1 - auc) / 0.5, 0.15, 1.85);
       const pts = [];
+
       for (let i = 0; i <= 160; i++) {
         const t = i / 160;
         pts.push({ x: x(t), y: y(Math.pow(t, power)) });
       }
+
       const curve = buildCurvePath(pts);
       const area = `M ${x(0)} ${y(0)} ` + pts.map(p => `L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ') + ` L ${x(1)} ${y(0)} Z`;
+
       curveSvg.innerHTML = `
         <rect x="0" y="0" width="${width}" height="${height}" fill="white"></rect>
         <path d="${area}" fill="rgba(44,127,184,0.16)"></path>
@@ -601,6 +670,7 @@
         <text x="${x(0.5)}" y="${height - 12}" text-anchor="middle" font-size="14" fill="#374151">False positive rate</text>
         <text x="18" y="${y(0.5)}" transform="rotate(-90 18 ${y(0.5)})" text-anchor="middle" font-size="14" fill="#374151">True positive rate</text>
       `;
+
       curveCaption.textContent = `ROC-style illustration for AUC = ${auc.toFixed(2)}. The shaded area represents discrimination above chance.`;
     }
 
@@ -635,61 +705,105 @@
     function interpretD(d) {
       const { u3, overlap, superiority } = setDSecondaryMetrics(d);
       return {
-        derived: `${superiority.toFixed(1)}% superiority`,
-        technical: `A Cohen's d of ${d.toFixed(2)} indicates a standardized mean difference of ${d.toFixed(2)} standard deviations between the two groups. Under a normal-distribution approximation with equal variances, this corresponds to Cohen's U3 of ${u3.toFixed(1)}%, an estimated overlap of ${overlap.toFixed(1)}%, and a probability of superiority of ${superiority.toFixed(1)}%.`,
+        derived: `Cohen's d`,
+        derivedDescription: `Cohen’s d is a standardized effect size that expresses the difference between two group means in units of their standard deviation.`,
+        technical: `A Cohen's d of ${d.toFixed(2)} indicates a standardized mean difference of ${d.toFixed(2)} <span class="term-help" title="Standard deviation is a single number that describes how spread out data values are around their mean; small values mean scores cluster near the average, while large values mean they are widely dispersed.">standard deviations</span> between the two groups. Under a normal-distribution approximation with equal variances, this corresponds to Cohen's U3 of ${u3.toFixed(1)}%, an estimated overlap of ${overlap.toFixed(1)}%, and a probability of superiority of ${superiority.toFixed(1)}%.`,
         plain: `This result suggests a modest average group difference for the selected outcome. Although one group tends to score higher on average, there is still substantial overlap between the two groups, so many individuals will not fit the average pattern.`,
         report: `The available group-level evidence suggests a modest association between the selected assessment result and ${currentOutcomeLabel()}. The observed effect should be interpreted cautiously, as substantial overlap remains between the groups and the statistic does not by itself justify strong individual-level conclusions.`
       };
     }
+
     function interpretAUC(auc) {
       const { discrimination } = setAucSecondaryMetrics(auc);
       return {
-        derived: `AUC ${auc.toFixed(2)}`,
+        derived: `AUC`,
+        derivedDescription: `AUC is a discrimination metric that indicates how well a tool distinguishes cases with and without an outcome.`,
         technical: `An AUC of ${auc.toFixed(2)} indicates modest discriminatory performance. Interpreted probabilistically, it means there is approximately a ${(auc * 100).toFixed(1)}% chance that a randomly selected case with the outcome will receive a higher score than a randomly selected case without the outcome. This is about ${discrimination.toFixed(1)} percentage points above chance performance.`,
         plain: `This value suggests that the instrument distinguishes somewhat better than chance between cases with and without the selected outcome, but not with high precision at the individual level.`,
         report: `The available evidence indicates modest discriminatory performance for ${currentOutcomeLabel()}. Although performance exceeds chance, the estimate should be interpreted cautiously and should not be treated as determinative at the individual case level.`
       };
     }
 
+    function applyToolSource(toolId) {
+      if (toolId === 'pclr') {
+        sourceText.innerHTML = PCLR_APA;
+        sourceLinks.innerHTML = PCLR_LINKS;
+      } else {
+        sourceText.textContent = 'Demo source placeholder for the currently selected instrument.';
+        sourceLinks.textContent = '';
+      }
+    }
+
+    function updateSliderState(isLocked) {
+      dSlider.disabled = isLocked;
+      if (isLocked) {
+        sliderHelperText.textContent = 'The slider is locked in tool-based mode. Switch to Custom mode to explore alternative Cohen\'s d values.';
+      } else {
+        sliderHelperText.textContent = 'Drag the slider to vary Cohen\'s d from 0.00 to 2.00 and update the illustration and derived values.';
+      }
+    }
+
     function generateFromTool() {
       const record = getSelectedPopulationRecord();
       if (!record) return;
       const result = record.metric === 'd' ? interpretD(record.effect) : interpretAUC(record.effect);
-      metricDisplay.textContent = `${record.metric === 'd' ? "Cohen's d" : 'AUC'} = ${record.effect.toFixed(2)} ${record.ci ? ` ${record.ci}` : ''}`;
+      metricDisplay.textContent = `${record.metric === 'd' ? "Cohen's d" : 'AUC'} = ${record.effect.toFixed(2)}`;
+      metricSubtext.textContent = `Effect size = ${record.metric === 'd' ? "Cohen's d" : 'AUC'}, Confidence interval = ${record.ci || '—'}`;
       derivedDisplay.textContent = result.derived;
-      technicalText.textContent = result.technical;
+      derivedSubtext.textContent = result.derivedDescription;
+      technicalText.innerHTML = result.technical;
       plainText.textContent = result.plain;
       reportText.textContent = result.report;
-      sourceText.textContent = record.source;
+      applyToolSource(getSelectedTool()?.id);
       dSliderWrap.style.display = record.metric === 'd' ? 'block' : 'none';
-      if (record.metric === 'd') dSlider.dataset.mode = 'tool';
+      if (record.metric === 'd') {
+        dSlider.dataset.mode = 'tool';
+        updateSliderState(true);
+      } else {
+        updateSliderState(false);
+      }
     }
+
     function generateFromCustom() {
       const metric = document.getElementById('metricType').value;
       const value = parseFloat(document.getElementById('customEffect').value || '0');
       const result = metric === 'd' ? interpretD(value) : interpretAUC(value);
       metricDisplay.textContent = `${metric === 'd' ? "Cohen's d" : 'AUC'} = ${value.toFixed(2)}`;
+      metricSubtext.textContent = `Effect size = ${metric === 'd' ? "Cohen's d" : 'AUC'}, Confidence interval = —`;
       derivedDisplay.textContent = result.derived;
-      technicalText.textContent = result.technical;
+      derivedSubtext.textContent = result.derivedDescription;
+      technicalText.innerHTML = result.technical;
       plainText.textContent = result.plain;
       reportText.textContent = result.report;
       sourceText.textContent = 'Custom mode: no external source attached in this beta prototype.';
+      sourceLinks.textContent = '';
       dSliderWrap.style.display = metric === 'd' ? 'block' : 'none';
-      if (metric === 'd') dSlider.dataset.mode = 'custom';
+      if (metric === 'd') {
+        dSlider.dataset.mode = 'custom';
+        updateSliderState(false);
+      } else {
+        updateSliderState(false);
+      }
     }
+
     function toggleModeUI() {
       const mode = getSelectedMode();
       toolCard.classList.toggle('hidden', mode !== 'tool');
       customCard.classList.toggle('hidden', mode !== 'custom');
     }
+
     function clearRing(svgId) { document.getElementById(svgId).innerHTML = ''; }
+
     function resetOutputs() {
       metricDisplay.textContent = '—';
+      metricSubtext.textContent = 'Effect size = —, Confidence interval = —';
       derivedDisplay.textContent = '—';
+      derivedSubtext.textContent = 'A short description of the displayed effect size will appear here.';
       technicalText.textContent = 'Awaiting input.';
       plainText.textContent = 'Awaiting input.';
       reportText.textContent = 'Awaiting input.';
       sourceText.textContent = 'No source selected.';
+      sourceLinks.textContent = '';
       curveSvg.innerHTML = '';
       curveCaption.textContent = 'Awaiting input.';
       ['ring1','ring2','ring3'].forEach(clearRing);
@@ -699,6 +813,7 @@
       dSlider.value = '0.50';
       dSliderValue.textContent = 'd = 0.50';
       dSliderWrap.style.display = 'block';
+      updateSliderState(false);
       copyMsg.style.display = 'none';
       copyMsg.textContent = 'Copied.';
     }
@@ -710,8 +825,10 @@
 
     generateBtn.addEventListener('click', () => {
       copyMsg.style.display = 'none';
-      if (getSelectedMode() === 'tool') generateFromTool(); else generateFromCustom();
+      if (getSelectedMode() === 'tool') generateFromTool();
+      else generateFromCustom();
     });
+
     resetBtn.addEventListener('click', () => {
       document.querySelector('input[name="mode"][value="tool"]').checked = true;
       document.getElementById('metricType').value = 'd';
@@ -721,6 +838,7 @@
       toggleModeUI();
       resetOutputs();
     });
+
     copyBtn.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(reportText.textContent);
@@ -732,21 +850,29 @@
     });
 
     dSlider.addEventListener('input', () => {
+      if (dSlider.disabled) return;
       const d = parseFloat(dSlider.value);
       dSliderValue.textContent = `d = ${d.toFixed(2)}`;
       const result = interpretD(d);
       metricDisplay.textContent = `Cohen's d = ${d.toFixed(2)}`;
-      derivedDisplay.textContent = `${(normalCDF(d / Math.sqrt(2)) * 100).toFixed(1)}% superiority`;
-      technicalText.textContent = result.technical;
+      metricSubtext.textContent = `Effect size = Cohen's d, Confidence interval = —`;
+      derivedDisplay.textContent = result.derived;
+      derivedSubtext.textContent = result.derivedDescription;
+      technicalText.innerHTML = result.technical;
       plainText.textContent = result.plain;
       reportText.textContent = result.report;
-      if (dSlider.dataset.mode === 'custom') {
-        document.getElementById('metricType').value = 'd';
-        document.getElementById('customEffect').value = d.toFixed(2);
-        sourceText.textContent = 'Custom mode: no external source attached in this beta prototype.';
-      } else {
-        sourceText.textContent = 'Interactive slider view: derived illustration for Cohen\'s d. Use Generate interpretation to restore the selected dataset source text.';
-      }
+      sourceText.textContent = 'Custom mode: no external source attached in this beta prototype.';
+      sourceLinks.textContent = '';
+      document.getElementById('metricType').value = 'd';
+      document.getElementById('customEffect').value = d.toFixed(2);
+    });
+
+    dSliderWrap.addEventListener('mouseenter', () => {
+      if (dSlider.disabled) dSliderWrap.classList.add('show-note');
+    });
+
+    dSliderWrap.addEventListener('mouseleave', () => {
+      dSliderWrap.classList.remove('show-note');
     });
 
     initToolSelect();
